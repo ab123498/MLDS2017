@@ -1,34 +1,54 @@
-import os
-from nltk.tokenize import RegexpTokenizer
 import re
-import pickle
+import os
+from nltk.tokenize.punkt import PunktSentenceTokenizer, PunktParameters
+punkt_param = PunktParameters()
+punkt_param.abbrev_types = set(['dr', 'vs', 'mr', 'mrs', 'prof', 'inc'])
+tokenizer = PunktSentenceTokenizer(punkt_param)
 
-sents = []
-tokenizer = RegexpTokenizer(r'[\w\']+')
-for filename in os.listdir('hw1_data/Holmes_Training_Data/'):
-    with open('hw1_data/Holmes_Training_Data/' + filename, 'r', errors='ignore') as f:
-        text = f.read()
+def remove_header(file):
+    for line in file:
+        if '*END*THE SMALL PRINT!' in line:
+            end = True
+            break
+    text = file.read()
+    file.close()
+    return text
 
-        oral = re.findall(r'\"[\w\s,\'.]+[.,?!]\"', text)
+def filter_paragraph(text):
+    text = re.split('\n\n', text)
+    text = [re.sub('\n', ' ', s).strip() for s in text]
+    text = [s for s in text if re.search(r'\.$', s)]
+    return text
 
-        oral = [re.sub(r'\s+', ' ', t) for t in oral]
+def parse_sent(text):
+    ret = []
+    for line in text:
+        l = re.findall(r'\"[^"]+\"', line)
+        line = re.sub(r'\"[^"]+\"', 'SOME_THING', line)
         
-        oral = [t for t in oral if not re.search("Small Print!", t, re.IGNORECASE)]
-        
-        oral = [t for t in oral if len(tokenizer.tokenize(t)) > 5]
-        
-        oral = [re.sub('_', '', t) for t in oral]
-        
-        oral = [re.sub(r'(\d+,? ?\'?)+\d+', '#', t) for t in oral]
-        sents += oral
+        tokens = tokenizer.tokenize(line)
+        new_tokens = []
+        for token in tokens:
+#             while re.search(r'SOME_THING', token):
+#                 token = re.sub(r'SOME_THING', l[0], token, count=1)
+#                 del l[0]
+            if re.search(r'SOME_THING', token):
+                continue
+            new_tokens.append(token)
+        new_tokens += l
+        ret += new_tokens
+    return ret
 
-with open('data/corpus.txt', 'w') as out:
-    for sent in sents:
-        out.write(sent)
-        out.write('\n')
+dir_path = 'hw1_data/Holmes_Training_Data/'
+output_file = open('data/corpus2.txt', 'w')
 
-# tokenizer = RegexpTokenizer(r'[\w\']+')
-
-# sents = [[word.lower() for word in tokenizer.tokenize(s)] for s in sents]
-
-# pickle.dump(sents, open('data/tokenized_corpus.p', 'wb'))
+for f in os.listdir(dir_path):
+    print(f)
+    file = open(dir_path + f, 'r', errors='ignore')
+    text = remove_header(file)
+    text = filter_paragraph(text)
+    text = parse_sent(text)
+    output = open('data/corpus2/' + f, 'w')
+    for sent in text:
+        output_file.write(sent + '\n')
+output_file.close()

@@ -84,7 +84,6 @@ with tf.Session() as sess:
             train_loss += loss
             if (i+1) % 100 == 0:
                 print('Iter:', i+1, 'loss:', train_loss/(i+1))
-                break
             if i >= 5000:
                 break
         avg_train_loss = train_loss/(i+1)

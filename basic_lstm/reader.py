@@ -13,8 +13,14 @@ class Reader():
         
         self.tokenizer = RegexpTokenizer(r'[\w#]+|[\w#]+\'[\w#]+')
         
-        training_data = open('data/corpus2.txt', 'r').read().lower().split('\n')
-        self.training_data = self._tokenize(training_data)
+        data = open('data/corpus2.txt', 'r').read().lower().split('\n')
+        data = self._tokenize(data)
+        
+        split_num = int(len(data)/10)
+        
+        self.data = data
+        self.training_data = data[:-split_num]
+        self.validate_data = data[-split_num:]
         
         self.vocabulary, self.vocabulary_inv = self._build_voca()
         
@@ -28,26 +34,30 @@ class Reader():
         
         return data
     
-    def _preprocess(self, data):
+    def _preprocess(self, data, is_test=False):
         vocabulary = self.vocabulary
         seq_length = self.seq_length
         
         data = [['<start>'] + s for s in data]
         
         data_id = np.zeros((len(data), seq_length)).astype(int)
-        len_list = np.zeros(len(data)).astype(int)
-        for i, sent in enumerate(data):
-            for j, word in enumerate(sent):
-                data_id[i][j] = self._map_vocabulary(word)
-                # get place to fill
-                if word == '_____':
-                    len_list[i] = j
-            # whole sequence length
-            # if len(sent) < seq_length:
-            #     len_list[i] = len(sent)
-            # else:
-            #     len_list[i] = seq_length
-        return data_id, len_list
+        data_len = np.zeros(len(data)).astype(int)
+        
+        
+        if is_test:
+            for i, sent in enumerate(data):
+                for j, word in enumerate(sent):
+                    if word == '_____':
+                        data_len[i] = j
+                    data_id[i][j] = self._map_vocabulary(word)
+                        
+        else:
+            for i, sent in enumerate(data):
+                for j, word in enumerate(sent):
+                    data_id[i][j] = self._map_vocabulary(word)
+                    data_len[i] = len(sent)
+                    
+        return data_id, data_len
     
     def _map_vocabulary(self, word):
         vocabulary = self.vocabulary
@@ -57,8 +67,8 @@ class Reader():
             return vocabulary['<unknown>']
     
     def _build_voca(self):
-        num_spare_words = 4
-        data = self.training_data
+        num_spare_words = 3
+        data = self.data
         words = []
         for sent in data:
             words += sent
@@ -69,9 +79,9 @@ class Reader():
         
         vocabulary = {x: i+num_spare_words for i, x in enumerate(vocabulary_inv)}
         vocabulary['<null>'] = 0
-        vocabulary['_____'] = 1
-        vocabulary['<unknown>'] = 2
-        vocabulary['<start>'] = 3
+        vocabulary['<unknown>'] = 1
+        vocabulary['<start>'] = 2
+        vocabulary['<end>'] = 3
         return vocabulary, vocabulary_inv
     
     def train_batch(self, batch_size, shuffle=False):
@@ -79,26 +89,37 @@ class Reader():
         vocabulary = self.vocabulary
         data_len = len(data)
         
-        target_word = []
-        
-        for i, sent in enumerate(data):
-            l = len(sent)
-            place2fill = np.random.randint(math.floor(l/4), math.ceil(l/4*3))
-
-            target_word.append(sent[place2fill])
-            data[i][place2fill] = '_____'
-        
         x, len_list = self._preprocess(data)
-        y = [self._map_vocabulary(i) for i in target_word]
-        y = np.array(y).astype(int)
+        y = np.zeros_like(x)
+        y[:, :-1] = x[:, 1:]
+        for i, l in enumerate(len_list):
+            y[i][l-1] = 3
         
         num_batch = math.ceil(data_len/batch_size)
         order = np.arange(num_batch)
         if shuffle:
             np.random.shuffle(order)
             
-        
         for i in order:
+            batch_x = x[i*batch_size:(i+1)*batch_size]
+            batch_y = y[i*batch_size:(i+1)*batch_size]
+            batch_l = len_list[i*batch_size:(i+1)*batch_size]
+            yield batch_x, batch_y, batch_l
+    
+    def valid_batch(self, batch_size):
+        data = self.validate_data
+        vocabulary = self.vocabulary
+        data_len = len(data)
+        
+        x, len_list = self._preprocess(data)
+        y = np.zeros_like(x)
+        y[:, :-1] = x[:, 1:]
+        for i, l in enumerate(len_list):
+            y[i][l-1] = 3
+        
+        num_batch = math.ceil(data_len/batch_size)
+            
+        for i in range(num_batch):
             batch_x = x[i*batch_size:(i+1)*batch_size]
             batch_y = y[i*batch_size:(i+1)*batch_size]
             batch_l = len_list[i*batch_size:(i+1)*batch_size]
@@ -113,7 +134,7 @@ class Reader():
         x = self._tokenize(df.question.tolist())
         
         
-        x, len_list = self._preprocess(x)
+        x, len_list = self._preprocess(x, is_test=True)
         y = df.ix[:, 2:].as_matrix()
         y = [[self._map_vocabulary(j) for j in i] for i in y]
         y = np.array(y).astype(int)
@@ -137,6 +158,9 @@ class Reader():
             try:
                 vec[index] = w2v[key]
             except KeyError:
-                vec[index] = np.zeros(300)
-        vec[1] = np.zeros(300)
+                vec[index] = np.random.uniform(-1, 1, 300)
+        vec[0] = np.random.uniform(-1, 1, 300)
+        vec[1] = np.random.uniform(-1, 1, 300)
+        vec[2] = np.random.uniform(-1, 1, 300)
+        vec[3] = np.random.uniform(-1, 1, 300)
         return vec.astype(np.float32)

@@ -14,6 +14,16 @@ print(train_x[:3])
 print(train_y[:3])
 print(seq_len[:3])
 
+valid_x, valid_y, seq_len = next(reader.valid_batch(128))
+
+print('validate data:')
+print('X shape:', valid_x.shape)
+print('Y shape:', valid_y.shape)
+print('Seq shape:', seq_len.shape)
+print(valid_x[:3])
+print(valid_y[:3])
+print(seq_len[:3])
+
 
 test_x, test_y, seq_len = next(reader.test_batch(1040))
 

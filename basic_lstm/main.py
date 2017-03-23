@@ -64,7 +64,8 @@ total_cost = total_cost / seq_length
 
 optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(total_cost)
 
-pred = tf.matmul(last_output, l_w) + l_b
+
+pred = tf.add(tf.matmul(last_output, l_w), l_b, name='predict')
 
 init = tf.global_variables_initializer()
 
@@ -73,7 +74,7 @@ output_dir = 'basic_lstm/' + t
 
 with tf.Session() as sess:
     sess.run(init)
-    saver = tf.train.Saver()
+    saver = tf.train.Saver(max_to_keep=None)
     for epoch in range(num_epochs):
         train_loss = 0
         start_time = time.time()
@@ -104,5 +105,5 @@ with tf.Session() as sess:
         
         if not os.path.exists(output_dir):
             os.mkdir(output_dir)
-            pickle.dump(data_loader.vocabulary, open(output_dir + 'vocabulary.p', 'wb'))
+            pickle.dump(data_loader, open(output_dir + 'data_loader.p', 'wb'))
         saver.save(sess, output_dir + 'epoch%d-%.2f' % (epoch, avg_valid_loss))

@@ -125,9 +125,12 @@ class Reader():
             batch_l = len_list[i*batch_size:(i+1)*batch_size]
             yield batch_x, batch_y, batch_l
 
-    def test_batch(self, batch_size):
+    def test_batch(self, batch_size, file=None):
         import pandas as pd
-        df = pd.read_csv('hw1_data/testing_data.csv')
+        if not file:
+            df = pd.read_csv('hw1_data/testing_data.csv')
+        else:
+            df = pd.read_csv(file)
         df.question = df.question.str.lower()
         
         

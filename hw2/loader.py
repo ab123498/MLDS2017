@@ -4,13 +4,33 @@ import pickle
 import json
 from nltk.tokenize import RegexpTokenizer
 from collections import Counter
+import gensim
+import math
 
 class Loader():
-    def __init__(self, vocabulary_size=5000, max_length=40):
+    def __init__(self, vocabulary_size=3000, max_length=40):
         path = 'data/vocabulary%d.p' % vocabulary_size
+        self.embedding_path = 'data/embedding%d.p' % vocabulary_size
         self.vocabulary_size = vocabulary_size
         self.voca = self.build_voca(path)
         self.max_length= max_length
+        
+    def get_embedding(self):
+        embedding_path = self.embedding_path
+        if os.path.exists(embedding_path):
+            return pickle.load(open(embedding_path, 'rb'))
+        
+        vocabulary_size = self.vocabulary_size
+        voca = self.voca
+        w2v = gensim.models.Word2Vec.load_word2vec_format('/data/pretrained/GoogleNews-vectors-negative300.bin', binary=True)
+        
+        embedding = np.zeros([vocabulary_size, 300])
+        
+        for key in voca:
+            if key in w2v:
+                embedding[voca[key]] = w2v[key]
+        pickle.dump(embedding, open(embedding_path, 'wb'))
+        return embedding
         
     def build_voca(self, path):
         _size = self.vocabulary_size
@@ -90,3 +110,12 @@ class Loader():
             batch_caption = caption[i*batch_size:(i+1)*batch_size]
 
             yield batch_feat, batch_caption
+            
+    
+        
+        
+        
+        
+        
+        
+        

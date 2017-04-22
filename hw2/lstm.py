@@ -4,6 +4,7 @@ import numpy as np
 from loader import Loader
 import time
 import os
+import pickle
 
 # hyper parameter
 video_length = 80
@@ -16,7 +17,7 @@ dim_hidden = 500
 max_caption_length = 20
 batch_size = 32
 learning_rate = 0.001
-n_epoch = 100
+n_epoch = 50
 
 
 video = tf.placeholder(tf.float32, [None, video_length, image_dim])
@@ -87,15 +88,25 @@ seq_cost = seq_cost / max_caption_length
 
 optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(seq_cost)
 
+
 predict = [tf.reshape(p, [_batch_size, 1, n_voca]) for p in predict]
 seq_output = tf.concat(predict, 1)
-seq_output = tf.arg_max(seq_output, 2)
+seq_output = tf.arg_max(seq_output, 2, name='output')
 
 loader = Loader(vocabulary_size=n_voca, max_length=max_caption_length)
-voca = loader.voca
-inv_voca = {v: k for k, v in voca.items()}
+
+output_path = './basic_model'
+if not os.path.exists(output_path):
+    os.mkdir(output_path)
+
 with tf.Session() as sess:
     tf.global_variables_initializer().run()
+    
+    tf.add_to_collection('output', seq_output)
+    
+    saver = tf.train.Saver(max_to_keep=100)
+    
+    pickle.dump(loader, open('./basic_model/loader.p', 'wb'))
     
     for epoch in range(n_epoch):
         print('Epoch :', epoch)
@@ -111,17 +122,7 @@ with tf.Session() as sess:
             if (i+1) % 100 == 0:
                 print('Time :', time.time() - start, 'Loss :', total_cost/(i+1))
         
-        print('Time :', time.time() - start, 'Loss :', total_cost/(i+1))
+        avg_cost = total_cost/(i+1)
+        print('Time :', time.time() - start, 'Loss :', avg_cost)
         
-#         limited_dir = 'MLDS_hw2_data/MLDS_hw2_time_limited/feat/'
-#         feat_file = os.listdir(limited_dir)
-#         feat = [np.load(limited_dir + f) for f in feat_file]
-
-#         feed = {
-#             video: feat
-#         }
-#         output_seqs = seq_output.eval(feed)
-#         for seq in output_seqs:
-#             seq = ' '.join([inv_voca[o] for o in seq])
-#             seq = seq.replace('<pad>', '')
-#             print(seq)
+        saver.save(sess, './basic_model/epoch%d-%.2f' % (epoch+1, avg_cost))

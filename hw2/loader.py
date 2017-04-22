@@ -89,8 +89,10 @@ class Loader():
             raw_caption.append(row)
         
         caption = np.zeros([len(caption), self.max_length], int)
+        # caption_len = [0] * len(caption)
         for i, cap in enumerate(raw_caption):
             cap = cap[:self.max_length]
+            # caption_len[i] = len(cap)
             caption[i, :len(cap)] = cap
         
         if shuffle:
@@ -108,14 +110,6 @@ class Loader():
             for index, f in enumerate(batch_feat_file):
                 batch_feat[index] = np.load(feat_dir % f)
             batch_caption = caption[i*batch_size:(i+1)*batch_size]
-
-            yield batch_feat, batch_caption
             
-    
-        
-        
-        
-        
-        
-        
-        
+            # batch_caption_len = caption_len[i*batch_size:(i+1)*batch_size]
+            yield batch_feat, batch_caption

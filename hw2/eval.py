@@ -12,6 +12,8 @@ for index, row in df.iterrows():
     score = 0
     for r in row.ref:
         score += BLEU(row.caption, r)
+        print(row.caption)
+        print(r)
     score /= len(row.ref)
     scores.append(score)
 print(sum(scores)/len(scores))

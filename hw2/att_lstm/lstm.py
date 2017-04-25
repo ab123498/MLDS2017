@@ -19,7 +19,7 @@ dim_hidden = 500
 max_caption_length = 20
 batch_size = 50
 learning_rate = 0.0001
-n_epoch = 100
+n_epoch = 500
 
 def model(test=False, true_caption=True, embedding=None):
     video = tf.placeholder(tf.float32, [None, video_length, image_dim])

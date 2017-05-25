@@ -2,14 +2,34 @@ import tensorflow as tf
 import numpy as np
 import model_ref as model
 import argparse
-import pickle
-from data_loader import Loader
 import shutil
 import os
 import scipy.misc
+import skipthoughts
 
 
-def test(loader=None):
+def test_data(text_path):
+    encoder = skipthoughts.Encoder(skipthoughts.load_model())
+
+    testing_text = open(text_path).read().strip().split('\n')
+
+    ids = []
+    texts = []
+    for line in testing_text:
+        line = line.split(',')
+        id = line[0]
+        text = line[1]
+
+        for i in range(5):
+            ids.append((id, i))
+            texts.append(text)
+
+    captions = encoder.encode(texts)
+
+    return ids, captions
+
+
+def test(text_path):
     z_dim = 100
     t_dim = 256
     image_size = 64
@@ -28,11 +48,8 @@ def test(loader=None):
         for i, (id, img) in enumerate(zip(ids, sample)):
             testing_id, sample_id = id
             scipy.misc.imsave(os.path.join(save_dir, 'sample_%s_%s.jpg' % (testing_id, sample_id+1)), img)
-    
-    if not loader:
-        loader = Loader()
 
-    ids, caps = loader.test_data()
+    ids, caps = test_data(text_path)
     caps = caps[:, :caption_vector_length]
 
     options = {
@@ -49,14 +66,12 @@ def test(loader=None):
     gan = model.GAN(options)
     input_tensors, outputs = gan.build_generator()
 
-
-    # print(data)
     config = tf.ConfigProto(
                 device_count = {'GPU': 0}
             )
     with tf.Session(config=config) as sess:
         saver = tf.train.Saver()
-        path = tf.train.latest_checkpoint('models_test')
+        path = tf.train.latest_checkpoint('trained_model')
         saver.restore(sess, path)
 
         z_noise = np.random.normal(0, 1, [len(caps), z_dim])
@@ -69,4 +84,10 @@ def test(loader=None):
         save_for_vis(ids, images)
 
 if __name__ == '__main__':
-    test()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("text_path")
+
+    args = parser.parse_args()
+    text_path = args.text_path
+
+    test(text_path)

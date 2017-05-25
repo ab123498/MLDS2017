@@ -27,7 +27,7 @@ def test(loader=None):
 
         for i, (id, img) in enumerate(zip(ids, sample)):
             testing_id, sample_id = id
-            scipy.misc.imsave(os.path.join(save_dir, 'sample_%s_%s.jpg' % (testing_id, sample_id)), img)
+            scipy.misc.imsave(os.path.join(save_dir, 'sample_%s_%s.jpg' % (testing_id, sample_id+1)), img)
     
     if not loader:
         loader = Loader()
@@ -56,7 +56,7 @@ def test(loader=None):
             )
     with tf.Session(config=config) as sess:
         saver = tf.train.Saver()
-        path = tf.train.latest_checkpoint('models')
+        path = tf.train.latest_checkpoint('models_test')
         saver.restore(sess, path)
 
         z_noise = np.random.normal(0, 1, [len(caps), z_dim])

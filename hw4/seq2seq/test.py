@@ -4,10 +4,9 @@ import pickle
 import os
 import string
 
-if not os.path.exists('models'):
+model_path = 'seq2seq/models'
+if not os.path.exists(model_path):
     print('trained model not exists!!')
-
-model_path = 'models'
 
 s2s = pickle.load(open(os.path.join(model_path, 's2s.p'), 'rb'))
 loader = pickle.load(open(os.path.join(model_path, 'loader.p'), 'rb'))
@@ -38,16 +37,24 @@ with tf.Session(config=config) as sess:
     for l in output:
         l = [inv_dic[i] for i in l]
 
+        cap = False
         s = string.capwords(l[0])
         for w in l[1:]:
             if w == '<eos>':
                 break
             elif w == '<pad>':
                 continue
+            elif w == '.':
+                cap = True
+                s += w
             elif w in set(string.punctuation):
                 s += w
             else:
+                if cap:
+                    w = string.capwords(w)
+                    cap = False
                 s += ' ' + w
+
         print(s)
 
 

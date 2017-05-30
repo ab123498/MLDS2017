@@ -36,7 +36,7 @@ def main(restore=False):
     max_seq_len = s2s.max_seq_len
 
     if restore:
-        loader = pickle.load(open('models/loader.p', 'rb'))
+        loader = pickle.load(open('seq2seq/models/loader.p', 'rb'))
     else:
         if os.path.exists('models'):
             shutil.rmtree('models')
@@ -44,10 +44,10 @@ def main(restore=False):
 
         loader = Loader(voca_size, max_seq_len)
         # store the loader for test
-        pickle.dump(loader, open('models/loader.p', 'wb'))# 
+        pickle.dump(loader, open('seq2seq/models/loader.p', 'wb'))# 
 
     # save graph model for test
-    pickle.dump(s2s, open('models/s2s.p', 'wb'))
+    pickle.dump(s2s, open('seq2seq/models/s2s.p', 'wb'))
     with tf.Session() as sess:
         init = tf.global_variables_initializer()
         sess.run(init)
@@ -78,7 +78,7 @@ def main(restore=False):
             print('Epoch %s Loss: %s' % (epoch, epoch_loss))
             with open('loss_log', 'a') as f:
                 f.write('%s\n' % epoch_loss)
-            saver.save(sess, "models/model_epoch_%d.ckpt" % epoch)
+            saver.save(sess, "seq2seq/models/model_epoch_%d.ckpt" % epoch)
 
 if __name__ == '__main__':
     main()

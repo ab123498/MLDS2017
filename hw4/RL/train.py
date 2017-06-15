@@ -16,9 +16,9 @@ def main(restore=False):
     rnn_size = 256
     n_layers = 3
 
-    n_epoch = 30
+    n_epoch = 1
     batch_size = 32
-    learning_rate = 1e-3
+    learning_rate = 1e-6
 
     work_dir = 'RL/'
 
@@ -34,7 +34,6 @@ def main(restore=False):
 
     loss = output_tensors['loss']
     text_output = output_tensors['text_output']
-
 
     optimizer = tf.train.AdamOptimizer(learning_rate).minimize(loss)
 
@@ -108,18 +107,16 @@ def main(restore=False):
 
 def rewardfunc(_output_sent, _ans_sent):
     sm = SmoothingFunction()
-    score = [sentence_bleu([a], o,smoothing_function=sm.method1) for a, o in zip(_ans_sent, _output_sent)]
+    score_list = [sentence_bleu([a], o,smoothing_function=sm.method1) for a, o in zip(_ans_sent, _output_sent)]
 
     for i in range(len(_ans_sent)):
         sent = _ans_sent[i]
-        
         if "don't know" not in sent:
-            score[i] += 0.3
+            score_list[i] += 0.1
 
         if '<unk>' not in sent:
-            score[i] += 0.3
-
-    return score
+            score_list[i] += 0.1
+    return score_list
 
 if __name__ == '__main__':
     main()

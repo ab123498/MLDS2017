@@ -4,9 +4,10 @@ import pickle
 import os
 import string
 from id2sent import id2sent
+import sys
 
 def main():
-    model_path = 'RL/models'
+    model_path = 'RL_model'
     if not os.path.exists(model_path):
         print('trained model not exists!!')
 
@@ -17,7 +18,7 @@ def main():
 
     input_tensors, output_tensors = s2s.build_model(train=False)
 
-    test_data = open('sample_input.txt').readlines()
+    test_data = open(sys.argv[1]).readlines()
     test_id, test_len = loader.to_test(test_data)
 
     config = tf.ConfigProto(
@@ -36,7 +37,10 @@ def main():
         output = sess.run(text_output, feed_dict=feed)
 
         outputs = id2sent(dic, output)
-        print(outputs)
+        
+        with open(sys.argv[2], 'w') as f:
+            for o in outputs:
+                f.write(o + '\n')
         
 
 

@@ -13,8 +13,11 @@ fi
 
 if [ $1 == "BEST" ]
 then
-    wget https://www.dropbox.com/s/k2ibqgcxhn4b56q/s2s_model.zip?dl=0 -O s2s_model.zip
+    if [ ! -e s2s_model ]
+    then
+        wget https://www.dropbox.com/s/k2ibqgcxhn4b56q/s2s_model.zip?dl=0 -O s2s_model.zip
 
-    unzip s2s_model.zip
+        unzip s2s_model.zip
+    fi
     python3 seq2seq/test.py $2 $3
 fi

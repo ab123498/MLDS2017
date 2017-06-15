@@ -7,21 +7,21 @@ import os
 import shutil
 
 
-def main(restore=False):
+def main():
     max_seq_len = 20
     voca_size = 20000
     embed_size = 300
     rnn_size = 256
     n_layers = 3
 
-    n_epoch = 30
+    n_epoch = 150
     batch_size = 32
     learning_rate = 1e-3
 
 
     s2s = Seq2Seq(max_seq_len, voca_size, embed_size, rnn_size, n_layers)
 
-    input_tensors, output_tensors = s2s.build_model()
+    input_tensors, output_tensors = s2s.build_model(no_sample=True)
 
     text_input = input_tensors['text_input']
     input_len = input_tensors['input_len']
@@ -35,16 +35,15 @@ def main(restore=False):
     voca_size = s2s.voca_size
     max_seq_len = s2s.max_seq_len
 
-    if restore:
-        loader = pickle.load(open('seq2seq/models/loader.p', 'rb'))
-    else:
-        if os.path.exists('models'):
-            shutil.rmtree('models')
-        os.mkdir('models')
+    if not os.path.exists('seq2seq/models'):
+        os.mkdir('seq2seq/models')
 
-        loader = Loader(voca_size, max_seq_len)
-        # store the loader for test
-        pickle.dump(loader, open('seq2seq/models/loader.p', 'wb'))# 
+    # loader = Loader(voca_size, max_seq_len)
+    loader = pickle.load(open('seq2seq/pre_trained/loader.p', 'rb'))
+    # store the loader for test
+    pickle.dump(loader, open('seq2seq/models/loader.p', 'wb'))# 
+
+
 
     # save graph model for test
     pickle.dump(s2s, open('seq2seq/models/s2s.p', 'wb'))
@@ -53,11 +52,11 @@ def main(restore=False):
         sess.run(init)
         
         saver = tf.train.Saver()
-        if restore:
-            saver_path = tf.train.latest_checkpoint('models')
-            saver.restore(sess, saver_path)
 
-        for epoch in range(n_epoch):
+        pre_trained_path = tf.train.latest_checkpoint('seq2seq/models/')
+        saver.restore(sess, pre_trained_path)
+
+        for epoch in range(193, 193 + n_epoch):
             batch_loss = []
             for i, (ques, lens, ans) in enumerate(loader.train_data(batch_size=batch_size)):
                 
@@ -76,7 +75,7 @@ def main(restore=False):
 
             epoch_loss = np.mean(batch_loss)
             print('Epoch %s Loss: %s' % (epoch, epoch_loss))
-            with open('loss_log', 'a') as f:
+            with open('seq2seq/loss_log', 'a') as f:
                 f.write('%s\n' % epoch_loss)
             saver.save(sess, "seq2seq/models/model_epoch_%d.ckpt" % epoch)
 

@@ -14,7 +14,7 @@ class Seq2Seq():
         self.rnn_size = rnn_size
         self.n_layers = n_layers
 
-    def build_model(self, train=True):
+    def build_model(self, no_sample=True, test=False):
         max_seq_len = self.max_seq_len
         voca_size = self.voca_size
         embed_size = self.embed_size
@@ -59,15 +59,18 @@ class Seq2Seq():
             output = projectOp(output)
             decoder_output.append(output)
 
-            if train:
+            if no_sample:
                 for inp in unstack_target:
                     inp = tf.nn.embedding_lookup(embedding, inp)
                     output, state = rnn_cell(inp, state)
                     output = projectOp(output)
                     decoder_output.append(output)
             else:
-                for _ in range(max_seq_len):
-                    inp = tf.argmax(output, 1)
+                for i in range(max_seq_len):
+                    if i == 0:
+                        inp = tf.reshape(tf.multinomial(output, 1), [-1])
+                    else:
+                        inp = tf.argmax(output, 1)
                     inp = tf.nn.embedding_lookup(embedding, inp)
                     output, state = rnn_cell(inp, state)
                     output = projectOp(output)
@@ -99,8 +102,8 @@ class Seq2Seq():
 
 if __name__ == '__main__':
     s2s = Seq2Seq()
-    s2s.build_model()
-    tf.reset_default_graph()
+    # s2s.build_model()
+    # tf.reset_default_graph()
     s2s.build_model(False)
 
 

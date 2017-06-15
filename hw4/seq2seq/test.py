@@ -4,9 +4,10 @@ import pickle
 import os
 import string
 import sys
+from model import Seq2Seq
 
 
-model_path = 'seq2seq/models'
+model_path = 's2s_model'
 if not os.path.exists(model_path):
     print('trained model not exists!!')
 
@@ -16,7 +17,7 @@ loader = pickle.load(open(os.path.join(model_path, 'loader.p'), 'rb'))
 dic = loader.dic
 inv_dic = {d[1]:d[0] for d in dic.items()}
 
-input_tensors, output_tensors = s2s.build_model(train=False)
+input_tensors, output_tensors = s2s.build_model(no_sample=False, test=True)
 
 test_data = open(sys.argv[1]).readlines()
 test_id, test_len = loader.to_test(test_data)
